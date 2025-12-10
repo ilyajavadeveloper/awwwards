@@ -9,87 +9,99 @@ import VideoPreview from "./VideoPreview";
 
 gsap.registerPlugin(ScrollTrigger);
 
+const TOTAL = 4;
+
 const Hero = () => {
-    const [currentIndex, setCurrentIndex] = useState(1);
-    const [clicked, setClicked] = useState(false);
+    const [index, setIndex] = useState(1);
     const [loading, setLoading] = useState(true);
-    const [loadedVideos, setLoadedVideos] = useState(0);
+    const [loaded, setLoaded] = useState(0);
 
-    const totalVideos = 4;
+    const previewRef = useRef(null);
+    const transitionRef = useRef(null);
+    const bgRef = useRef(null);
+    const circleRef = useRef(null);
 
-    // три разных рефа — НИКАКИХ ДУБЛЕЙ
-    const previewRef = useRef(null);      // мини-видео в кнопке
-    const transitionRef = useRef(null);   // видео, которое анимируется при клике
-    const bgRef = useRef(null);           // фоновое видео
+    const getSrc = (i) => `videos/hero-${i}.mp4`;
 
-    const getVideoSrc = (i) => `videos/hero-${i}.mp4`;
+    const handleLoad = () => setLoaded((p) => p + 1);
 
-    const handleVideoLoad = () => {
-        setLoadedVideos((prev) => prev + 1);
-    };
-
-    // показываем страницу ТОЛЬКО когда загружены все 4 видео
     useEffect(() => {
-        if (loadedVideos >= totalVideos) {
-            setLoading(false);
-        }
-    }, [loadedVideos]);
+        if (loaded >= TOTAL) setLoading(false);
+    }, [loaded]);
 
-    const handleMiniClick = () => {
-        if (clicked) return;
-        setClicked(true);
+    const next = () => setIndex((p) => (p % TOTAL) + 1);
 
-        setCurrentIndex((prev) => (prev % totalVideos) + 1);
-    };
-
-    /* ======================================================
-       ANIMATION FOR VIDEO SWITCH
-    ======================================================= */
+    /* ===============================
+          CIRCLE → EXPAND TRANSITION
+    ================================ */
     useGSAP(
         () => {
-            if (!clicked) return;
-
             const tl = gsap.timeline();
 
-            gsap.set("#transition-video", { visibility: "visible" });
+            gsap.set(circleRef.current, {
+                scale: 0,
+                visibility: "visible",
+            });
 
-            tl.to("#transition-video", {
-                transformOrigin: "center center",
-                scale: 1,
-                width: "100%",
-                height: "100%",
-                ease: "power2.inOut",
-                duration: 1,
+            tl.to(circleRef.current, {
+                scale: 20,
+                ease: "power3.inOut",
+                duration: 1.1,
                 onStart: () => transitionRef.current?.play(),
-            }).from(
-                "#preview-video",
-                {
-                    transformOrigin: "center center",
-                    scale: 0,
-                    ease: "power2.inOut",
-                    duration: 1.3,
-                },
-                0
-            );
+            })
+                .to(
+                    bgRef.current,
+                    {
+                        opacity: 0,
+                        duration: 0.3,
+                        ease: "none",
+                        onComplete: () => {
+                            bgRef.current.src = getSrc(index);
+                            bgRef.current.play();
+                        },
+                    },
+                    0.2
+                )
+                .to(
+                    bgRef.current,
+                    {
+                        opacity: 1,
+                        duration: 0.4,
+                        ease: "none",
+                    },
+                    0.4
+                )
+                .to(
+                    circleRef.current,
+                    {
+                        scale: 0,
+                        duration: 0.8,
+                        ease: "power3.inOut",
+                    },
+                    0.4
+                );
         },
-        { dependencies: [currentIndex], revertOnUpdate: true }
+        {
+            dependencies: [index],
+            revertOnUpdate: true,
+        }
     );
 
-    /* ======================================================
-       SCROLLTRIGGER — FRAME MORPH
-    ======================================================= */
+    /* ===============================
+          FRAME MORPH ON SCROLL
+    ================================ */
     useGSAP(() => {
-        gsap.set("#video-frame", {
+        gsap.set("#frame", {
             clipPath: "polygon(14% 0, 72% 0, 88% 90%, 0 95%)",
             borderRadius: "0% 0% 40% 10%",
         });
 
-        gsap.from("#video-frame", {
+        gsap.from("#frame", {
             clipPath: "polygon(0 0, 100% 0, 100% 100%, 0 100%)",
             borderRadius: "0% 0% 0% 0%",
-            ease: "power1.inOut",
+            ease: "power2.inOut",
             scrollTrigger: {
-                trigger: "#video-frame",
+                trigger: "#frame",
                 start: "center center",
                 end: "bottom center",
                 scrub: true,
@@ -99,7 +111,7 @@ const Hero = () => {
 
     return (
         <div className="relative h-dvh w-screen overflow-hidden">
-            {/* ================= LOADING SCREEN ================= */}
+            {/* LOADER */}
             {loading && (
                 <div className="absolute inset-0 z-[100] flex-center bg-violet-50">
                     <div className="three-body">
@@ -110,56 +122,59 @@ const Hero = () => {
                 </div>
             )}
 
-            {/* ================= VIDEO FRAME ================= */}
+            {/* FRAME */}
             <div
-                id="video-frame"
+                id="frame"
                 className="relative z-10 h-dvh w-screen overflow-hidden rounded-lg bg-blue-75"
             >
-                <div>
-                    {/* MINI PREVIEW BUTTON */}
-                    <div className="mask-clip-path absolute-center absolute z-50 size-64 cursor-pointer overflow-hidden rounded-lg">
-                        <VideoPreview>
-                            <div
-                                onClick={handleMiniClick}
-                                className="origin-center scale-50 opacity-0 transition-all duration-500 ease-in hover:scale-100 hover:opacity-100"
-                            >
-                                <video
-                                    ref={previewRef}
-                                    id="preview-video"
-                                    src={getVideoSrc((currentIndex % totalVideos) + 1)}
-                                    loop
-                                    muted
-                                    className="size-64 origin-center scale-150 object-cover"
-                                    onLoadedData={handleVideoLoad}
-                                />
-                            </div>
-                        </VideoPreview>
-                    </div>
-
-                    {/* TRANSITION VIDEO */}
-                    <video
-                        ref={transitionRef}
-                        id="transition-video"
-                        src={getVideoSrc(currentIndex)}
-                        loop
-                        muted
-                        className="absolute-center invisible absolute z-20 size-64 object-cover"
-                        onLoadedData={handleVideoLoad}
-                    />
-
-                    {/* BACKGROUND VIDEO */}
-                    <video
-                        ref={bgRef}
-                        src={getVideoSrc(currentIndex)}
-                        autoPlay
-                        loop
-                        muted
-                        className="absolute inset-0 size-full object-cover"
-                        onLoadedData={handleVideoLoad}
-                    />
+                {/* MINI PREVIEW */}
+                <div className="mask-clip-path absolute-center absolute z-50 size-64 cursor-pointer overflow-hidden rounded-lg">
+                    <VideoPreview>
+                        <div
+                            onClick={next}
+                            className="origin-center scale-50 opacity-0 transition-all duration-500 ease-in hover:scale-100 hover:opacity-100"
+                        >
+                            <video
+                                ref={previewRef}
+                                src={getSrc((index % TOTAL) + 1)}
+                                loop
+                                muted
+                                className="size-64 origin-center scale-150 object-cover"
+                                onLoadedData={handleLoad}
+                            />
+                        </div>
+                    </VideoPreview>
                 </div>
 
-                {/* ================= HERO TEXT ================= */}
+                {/* CIRCLE TRANSITION */}
+                <div
+                    ref={circleRef}
+                    className="absolute-center absolute z-30 size-40 rounded-full bg-white opacity-90"
+                    style={{ visibility: "hidden" }}
+                />
+
+                {/* VIDEO FOR TRANSITION */}
+                <video
+                    ref={transitionRef}
+                    src={getSrc(index)}
+                    loop
+                    muted
+                    className="absolute-center invisible absolute z-20 size-64 object-cover"
+                    onLoadedData={handleLoad}
+                />
+
+                {/* BACKGROUND VIDEO */}
+                <video
+                    ref={bgRef}
+                    src={getSrc(index)}
+                    autoPlay
+                    loop
+                    muted
+                    className="absolute inset-0 size-full object-cover"
+                    onLoadedData={handleLoad}
+                />
+
+                {/* TEXT */}
                 <h1 className="special-font hero-heading absolute bottom-5 right-5 z-40 text-blue-75">
                     G<b>A</b>MING
                 </h1>
@@ -184,7 +199,7 @@ const Hero = () => {
                 </div>
             </div>
 
-            {/* OUTLINE TEXT BELOW */}
+            {/* TEXT OUTLINE */}
             <h1 className="special-font hero-heading absolute bottom-5 right-5 text-black">
                 G<b>A</b>MING
             </h1>
