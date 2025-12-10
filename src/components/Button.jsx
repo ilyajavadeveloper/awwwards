@@ -15,19 +15,16 @@ const Button = ({ title, id, rightIcon, leftIcon, containerClass }) => {
                 ${containerClass}
             `}
         >
-            {/* LEFT ICON */}
             {leftIcon && (
                 <span className="text-black text-lg flex items-center transition-all duration-300">
                     {leftIcon}
                 </span>
             )}
 
-            {/* TEXT */}
             <span className="relative text-black font-semibold uppercase tracking-wide transition-all duration-300">
                 {title}
             </span>
 
-            {/* RIGHT ICON */}
             {rightIcon && (
                 <span className="text-black text-lg flex items-center transition-all duration-300">
                     {rightIcon}
