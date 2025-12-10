@@ -3,7 +3,7 @@ import Button from "./Button";
 
 const ImageClipBox = ({ src, clipClass }) => (
     <div className={clipClass}>
-        <img src={src} />
+        <img src={src}  alt='img'/>
     </div>
 );
 
