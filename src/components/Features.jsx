@@ -1,6 +1,9 @@
 import { useState, useRef } from "react";
 import { TiLocationArrow } from "react-icons/ti";
 
+/* ===========================
+   BENTO TILT (3D Hover)
+=========================== */
 export const BentoTilt = ({ children, className = "" }) => {
     const [transformStyle, setTransformStyle] = useState("");
     const itemRef = useRef(null);
@@ -8,22 +11,20 @@ export const BentoTilt = ({ children, className = "" }) => {
     const handleMouseMove = (event) => {
         if (!itemRef.current) return;
 
-        const { left, top, width, height } =
-            itemRef.current.getBoundingClientRect();
+        const { left, top, width, height } = itemRef.current.getBoundingClientRect();
 
-        const relativeX = (event.clientX - left) / width;
-        const relativeY = (event.clientY - top) / height;
+        const x = (event.clientX - left) / width;
+        const y = (event.clientY - top) / height;
 
-        const tiltX = (relativeY - 0.5) * 5;
-        const tiltY = (relativeX - 0.5) * -5;
+        const tiltX = (y - 0.5) * 6;
+        const tiltY = (x - 0.5) * -6;
 
-        const newTransform = `perspective(700px) rotateX(${tiltX}deg) rotateY(${tiltY}deg) scale3d(.95, .95, .95)`;
-        setTransformStyle(newTransform);
+        setTransformStyle(
+            `perspective(900px) rotateX(${tiltX}deg) rotateY(${tiltY}deg) scale3d(.96,.96,.96)`
+        );
     };
 
-    const handleMouseLeave = () => {
-        setTransformStyle("");
-    };
+    const handleMouseLeave = () => setTransformStyle("");
 
     return (
         <div
@@ -38,55 +39,60 @@ export const BentoTilt = ({ children, className = "" }) => {
     );
 };
 
+/* ===========================
+   BENTO CARD
+=========================== */
 export const BentoCard = ({ src, title, description, isComingSoon }) => {
-    const [cursorPosition, setCursorPosition] = useState({ x: 0, y: 0 });
-    const [hoverOpacity, setHoverOpacity] = useState(0);
-    const hoverButtonRef = useRef(null);
+    const [cursor, setCursor] = useState({ x: 0, y: 0 });
+    const [opacity, setOpacity] = useState(0);
+    const hoverRef = useRef(null);
 
-    const handleMouseMove = (event) => {
-        if (!hoverButtonRef.current) return;
-        const rect = hoverButtonRef.current.getBoundingClientRect();
+    const handleMove = (e) => {
+        if (!hoverRef.current) return;
+        const rect = hoverRef.current.getBoundingClientRect();
 
-        setCursorPosition({
-            x: event.clientX - rect.left,
-            y: event.clientY - rect.top,
+        setCursor({
+            x: e.clientX - rect.left,
+            y: e.clientY - rect.top,
         });
     };
 
-    const handleMouseEnter = () => setHoverOpacity(1);
-    const handleMouseLeave = () => setHoverOpacity(0);
-
     return (
-        <div className="relative size-full">
+        <div className="relative w-full h-full">
             <video
                 src={src}
-                loop
                 muted
+                loop
                 autoPlay
-                className="absolute left-0 top-0 size-full object-cover object-center"
+                className="absolute inset-0 w-full h-full object-contain bg-black"
             />
-            <div className="relative z-10 flex size-full flex-col justify-between p-5 text-blue-50">
+
+            <div className="relative z-10 flex h-full flex-col justify-between p-6 text-blue-50">
                 <div>
-                    <h1 className="bento-title special-font">{title}</h1>
+                    <h1 className="bento-title special-font text-4xl md:text-5xl lg:text-6xl">
+                        {title}
+                    </h1>
+
                     {description && (
-                        <p className="mt-3 max-w-64 text-xs md:text-base">{description}</p>
+                        <p className="mt-3 max-w-64 text-xs md:text-base opacity-80">
+                            {description}
+                        </p>
                     )}
                 </div>
 
                 {isComingSoon && (
                     <div
-                        ref={hoverButtonRef}
-                        onMouseMove={handleMouseMove}
-                        onMouseEnter={handleMouseEnter}
-                        onMouseLeave={handleMouseLeave}
-                        className="border-hsla relative flex w-fit cursor-pointer items-center gap-1 overflow-hidden rounded-full bg-black px-5 py-2 text-xs uppercase text-white/20"
+                        ref={hoverRef}
+                        onMouseMove={handleMove}
+                        onMouseEnter={() => setOpacity(1)}
+                        onMouseLeave={() => setOpacity(0)}
+                        className="relative flex w-fit cursor-pointer items-center gap-1 overflow-hidden rounded-full bg-black/80 px-5 py-2 text-xs uppercase text-white/40 border border-white/10"
                     >
-                        {/* Radial gradient hover effect */}
                         <div
-                            className="pointer-events-none absolute -inset-px opacity-0 transition duration-300"
+                            className="pointer-events-none absolute -inset-px transition duration-300"
                             style={{
-                                opacity: hoverOpacity,
-                                background: `radial-gradient(100px circle at ${cursorPosition.x}px ${cursorPosition.y}px, #656fe288, #00000026)`,
+                                opacity,
+                                background: `radial-gradient(120px circle at ${cursor.x}px ${cursor.y}px, #8a92ff66, transparent)`,
                             }}
                         />
                         <TiLocationArrow className="relative z-20" />
@@ -98,90 +104,81 @@ export const BentoCard = ({ src, title, description, isComingSoon }) => {
     );
 };
 
+/* ===========================
+   FULL FEATURES SECTION (UPDATED)
+=========================== */
 const Features = () => (
     <section className="bg-black pb-52">
-        <div className="container mx-auto px-3 md:px-10">
-            <div className="px-5 py-32">
+        <div className="container mx-auto px-4 md:px-10">
+
+            {/* TOP TEXT */}
+            <div className="px-5 py-28">
                 <p className="font-circular-web text-lg text-blue-50">
                     Into the Metagame Layer
                 </p>
                 <p className="max-w-md font-circular-web text-lg text-blue-50 opacity-50">
-                    Immerse yourself in a rich and ever-expanding universe where a vibrant
-                    array of products converge into an interconnected overlay experience
-                    on your world.
+                    Immerse yourself in a rich and expanding universe where products converge
+                    into an interconnected overlay on your world.
                 </p>
             </div>
 
-            <BentoTilt className="border-hsla relative mb-7 h-96 w-full overflow-hidden rounded-md md:h-[65vh]">
+            {/* MAIN BIG CARD */}
+            <BentoTilt className="
+                relative mb-10 overflow-hidden rounded-2xl border border-white/10
+                bg-black/20 backdrop-blur-xl
+                h-[420px] md:h-[70vh] lg:h-[75vh] xl:h-[82vh]
+                transition-all duration-300
+            ">
                 <BentoCard
                     src="videos/feature-1.mp4"
-                    title={
-                        <>
-                            radia<b>n</b>t
-                        </>
-                    }
-                    description="A cross-platform metagame app, turning your activities across Web2 and Web3 games into a rewarding adventure."
+                    title={<>radia<b>n</b>t</>}
+                    description="A cross-platform metagame app turning your activities into a rewarding adventure."
                     isComingSoon
                 />
             </BentoTilt>
 
-            <div className="grid h-[135vh] w-full grid-cols-2 grid-rows-3 gap-7">
-                <BentoTilt className="bento-tilt_1 row-span-1 md:col-span-1 md:row-span-2">
+            {/* GRID WITHOUT COMING SOON */}
+            <div className="
+                grid w-full gap-7
+                grid-cols-1 md:grid-cols-2
+                auto-rows-[420px] md:auto-rows-[55vh] lg:auto-rows-[60vh]
+            ">
+
+                <BentoTilt className="relative overflow-hidden rounded-2xl border border-white/10 bg-black/20 backdrop-blur-xl">
                     <BentoCard
                         src="videos/feature-2.mp4"
-                        title={
-                            <>
-                                zig<b>m</b>a
-                            </>
-                        }
-                        description="An anime and gaming-inspired NFT collection - the IP primed for expansion."
+                        title={<>zig<b>m</b>a</>}
+                        description="Anime & gaming inspired IP ready for expansion."
                         isComingSoon
                     />
                 </BentoTilt>
 
-                <BentoTilt className="bento-tilt_1 row-span-1 ms-32 md:col-span-1 md:ms-0">
+                <BentoTilt className="relative overflow-hidden rounded-2xl border border-white/10 bg-black/20 backdrop-blur-xl">
                     <BentoCard
                         src="videos/feature-3.mp4"
-                        title={
-                            <>
-                                n<b>e</b>xus
-                            </>
-                        }
-                        description="A gamified social hub, adding a new dimension of play to social interaction for Web3 communities."
+                        title={<>n<b>e</b>xus</>}
+                        description="A gamified social hub adding new layers of play."
                         isComingSoon
                     />
                 </BentoTilt>
 
-                <BentoTilt className="bento-tilt_1 me-14 md:col-span-1 md:me-0">
+                <BentoTilt className="relative overflow-hidden rounded-2xl border border-white/10 bg-black/20 backdrop-blur-xl">
                     <BentoCard
                         src="videos/feature-4.mp4"
-                        title={
-                            <>
-                                az<b>u</b>l
-                            </>
-                        }
-                        description="A cross-world AI Agent - elevating your gameplay to be more fun and productive."
+                        title={<>az<b>u</b>l</>}
+                        description="A cross-world AI Agent enhancing your gameplay."
                         isComingSoon
                     />
                 </BentoTilt>
 
-                <BentoTilt className="bento-tilt_2">
-                    <div className="flex size-full flex-col justify-between bg-violet-300 p-5">
-                        <h1 className="bento-title special-font max-w-64 text-black">
-                            M<b>o</b>re co<b>m</b>ing s<b>o</b>on.
-                        </h1>
-
-                        <TiLocationArrow className="m-5 scale-[5] self-end" />
-                    </div>
-                </BentoTilt>
-
-                <BentoTilt className="bento-tilt_2">
+                {/* LAST VIDEO */}
+                <BentoTilt className="relative overflow-hidden rounded-2xl border border-white/10 bg-black">
                     <video
-                        src="/videos/feature-5.mp4"
-                        loop
-                        muted
+                        src="videos/feature-5.mp4"
                         autoPlay
-                        className="size-full object-cover object-center"
+                        muted
+                        loop
+                        className="absolute inset-0 w-full h-full object-contain bg-black"
                     />
                 </BentoTilt>
             </div>
