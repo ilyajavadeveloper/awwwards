@@ -1,4 +1,6 @@
 import React, { useRef, useState } from 'react'
+import Button from "./Button.jsx";
+import { TiLocationArrow } from "react-icons/ti";
 
 const Hero = () => {
     const [currentIndex, setCurrentIndex] = useState(1);
@@ -6,15 +8,15 @@ const Hero = () => {
     const [isLoading, setIsLoading] = useState(true);
     const [loadedVideos, setLoadedVideos] = useState(0);
 
-    const totalVideos = 4; // ← Было 3, поэтому ломалась карусель
+    const totalVideos = 4;
     const nextVideoRef = useRef(null);
 
     const handleVideoLoad = () => {
         setLoadedVideos(prev => prev + 1);
     };
 
-    // Правильный карусельный индекс
-    const upcomingVideoIndex = currentIndex === totalVideos ? 1 : currentIndex + 1;
+    const upcomingVideoIndex =
+        currentIndex === totalVideos ? 1 : currentIndex + 1;
 
     const handleMiniVdClick = () => {
         setCurrentIndex(upcomingVideoIndex);
@@ -24,7 +26,10 @@ const Hero = () => {
 
     return (
         <div className='relative h-dvh w-screen overflow-x-hidden'>
-            <div id='video-frame' className='relative z-10 h-dvh w-screen overflow-x-hidden rounded-lg bg-blue-75'>
+            <div
+                id='video-frame'
+                className='relative z-10 h-dvh w-screen overflow-x-hidden rounded-lg bg-blue-75'
+            >
                 <div>
                     {/* MINI VIDEO */}
                     <div
@@ -38,7 +43,7 @@ const Hero = () => {
                                 ref={nextVideoRef}
                                 src={getVideoSrc(upcomingVideoIndex)}
                                 loop
-                                muted={true}
+                                muted
                                 id='current-video'
                                 className='size-64 origin-center scale-150 object-cover object-center'
                                 onLoadedData={handleVideoLoad}
@@ -59,16 +64,18 @@ const Hero = () => {
                     {/* MAIN VIDEO */}
                     <video
                         src={getVideoSrc(currentIndex)}
-                        autoPlay={true}
+                        autoPlay
                         loop
-                        muted={true}
+                        muted
                         className='absolute left-0 top-0 size-full object-cover object-center'
                         onLoadedData={handleVideoLoad}
                     />
                 </div>
 
-                {/* TEXT */}
-                <h1 className='special-font hero-heading absolute-5 bottom-5 right-5 text-blue-75'>
+                {/* === FIXED GAMING TEXT — bottom-right === */}
+                <h1
+                    className='special-font hero-heading absolute z-30 right-6 bottom-6 text-blue-100 drop-shadow-[0_4px_8px_rgba(0,0,0,0.45)]'
+                >
                     G<b>a</b>ming
                 </h1>
 
@@ -82,7 +89,16 @@ const Hero = () => {
                     <div className="mt-3 px-5 sm:px-10">
                         <p className="font-robert-regular text-blue-100/90 leading-tight tracking-wide">
                             Enter the Metagame Layer
-                            <span className="block text-blue-100/60">Unleash the Play Economy</span>
+                            <span className="block text-blue-100/60">
+                                Unleash the Play Economy
+                            </span>
+
+                            <Button
+                                id='watch-trailer'
+                                title='Watch Trailer'
+                                leftIcon={<TiLocationArrow />}
+                                containerClass='bg-yellow-300 flex-center gap-1'
+                            />
                         </p>
                     </div>
                 </div>
