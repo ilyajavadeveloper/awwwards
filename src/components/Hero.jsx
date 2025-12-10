@@ -17,18 +17,14 @@ const Hero = () => {
     const [loadedVideos, setLoadedVideos] = useState(0);
 
     const totalVideos = 4;
-
-    // 🧩 FIX — три отдельных рефа для разных видео
-    const previewRef = useRef(null);     // мини видео
-    const nextRef = useRef(null);        // видео, которое увеличивается
-    const bgRef = useRef(null);          // фоновое видео
+    const nextVdRef = useRef(null);
 
     const handleVideoLoad = () => {
         setLoadedVideos((prev) => prev + 1);
     };
 
     useEffect(() => {
-        if (loadedVideos >= totalVideos) {
+        if (loadedVideos === totalVideos - 1) {
             setLoading(false);
         }
     }, [loadedVideos]);
@@ -39,15 +35,10 @@ const Hero = () => {
         setCurrentIndex((prevIndex) => (prevIndex % totalVideos) + 1);
     };
 
-    /* ======================================================
-            FIXED GSAP — no more broken refs in prod
-    ====================================================== */
     useGSAP(
         () => {
             if (hasClicked) {
-                // показываем следующее видео
                 gsap.set("#next-video", { visibility: "visible" });
-
                 gsap.to("#next-video", {
                     transformOrigin: "center center",
                     scale: 1,
@@ -55,9 +46,8 @@ const Hero = () => {
                     height: "100%",
                     duration: 1,
                     ease: "power1.inOut",
-                    onStart: () => nextRef.current?.play(),
+                    onStart: () => nextVdRef.current.play(),
                 });
-
                 gsap.from("#current-video", {
                     transformOrigin: "center center",
                     scale: 0,
@@ -72,9 +62,6 @@ const Hero = () => {
         }
     );
 
-    /* ======================================================
-            ScrollTrigger shape morph (unchanged)
-    ====================================================== */
     useGSAP(() => {
         gsap.set("#video-frame", {
             clipPath: "polygon(14% 0, 72% 0, 88% 90%, 0 95%)",
@@ -99,6 +86,7 @@ const Hero = () => {
         <div className="relative h-dvh w-screen overflow-x-hidden">
             {loading && (
                 <div className="flex-center absolute z-[100] h-dvh w-screen overflow-hidden bg-violet-50">
+                    {/* https://uiverse.io/G4b413l/tidy-walrus-92 */}
                     <div className="three-body">
                         <div className="three-body__dot"></div>
                         <div className="three-body__dot"></div>
@@ -112,7 +100,6 @@ const Hero = () => {
                 className="relative z-10 h-dvh w-screen overflow-hidden rounded-lg bg-blue-75"
             >
                 <div>
-                    {/* MINI PREVIEW */}
                     <div className="mask-clip-path absolute-center absolute z-50 size-64 cursor-pointer overflow-hidden rounded-lg">
                         <VideoPreview>
                             <div
@@ -120,42 +107,39 @@ const Hero = () => {
                                 className="origin-center scale-50 opacity-0 transition-all duration-500 ease-in hover:scale-100 hover:opacity-100"
                             >
                                 <video
-                                    ref={previewRef}
+                                    ref={nextVdRef}
                                     src={getVideoSrc((currentIndex % totalVideos) + 1)}
                                     loop
                                     muted
                                     id="current-video"
-                                    className="size-64 origin-center scale-150 object-cover"
+                                    className="size-64 origin-center scale-150 object-cover object-center"
                                     onLoadedData={handleVideoLoad}
                                 />
                             </div>
                         </VideoPreview>
                     </div>
 
-                    {/* NEXT VIDEO (animation target) */}
                     <video
-                        ref={nextRef}
+                        ref={nextVdRef}
                         src={getVideoSrc(currentIndex)}
                         loop
                         muted
                         id="next-video"
-                        className="absolute-center invisible absolute z-20 size-64 object-cover"
+                        className="absolute-center invisible absolute z-20 size-64 object-cover object-center"
                         onLoadedData={handleVideoLoad}
                     />
-
-                    {/* BACKGROUND VIDEO */}
                     <video
-                        ref={bgRef}
-                        src={getVideoSrc(currentIndex)}
+                        src={getVideoSrc(
+                            currentIndex === totalVideos - 1 ? 1 : currentIndex
+                        )}
                         autoPlay
                         loop
                         muted
-                        className="absolute left-0 top-0 size-full object-cover"
+                        className="absolute left-0 top-0 size-full object-cover object-center"
                         onLoadedData={handleVideoLoad}
                     />
                 </div>
 
-                {/* HERO TEXT */}
                 <h1 className="special-font hero-heading absolute bottom-5 right-5 z-40 text-blue-75">
                     G<b>A</b>MING
                 </h1>
@@ -180,7 +164,6 @@ const Hero = () => {
                 </div>
             </div>
 
-            {/* OUTLINE TEXT */}
             <h1 className="special-font hero-heading absolute bottom-5 right-5 text-black">
                 G<b>A</b>MING
             </h1>
