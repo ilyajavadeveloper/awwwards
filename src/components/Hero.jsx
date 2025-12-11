@@ -14,63 +14,62 @@ const TOTAL = 4;
 const Hero = () => {
     const [current, setCurrent] = useState(1);
     const [clicked, setClicked] = useState(false);
+
     const [loading, setLoading] = useState(true);
     const [loaded, setLoaded] = useState(0);
 
     const previewRef = useRef(null);
     const transitionRef = useRef(null);
 
-    const nextIndex = (current % TOTAL) + 1;
+    const isMobile = typeof window !== "undefined" && window.innerWidth < 640;
 
     const handleLoad = () => setLoaded((p) => p + 1);
 
     useEffect(() => {
-        if (loaded >= TOTAL) setLoading(false);
+        if (loaded >= 2) setLoading(false);
     }, [loaded]);
 
-    const onPreviewClick = () => {
-        if (clicked || loading) return;
+    const nextIndex = (current % TOTAL) + 1;
+
+    /* On preview click */
+    const handleClick = () => {
+        if (clicked) return;
+
         setClicked(true);
         setCurrent(nextIndex);
     };
 
-    /* =============================
-       GSAP TRANSITION (FIX MOBILE)
-    ============================== */
+    /* ============= Transition Fix ============= */
     useGSAP(
         () => {
             if (!clicked) return;
 
             const tl = gsap.timeline({
                 defaults: { ease: "power2.out" },
-                onStart: () => {
-                    if (transitionRef.current) transitionRef.current.play();
-                },
+                onStart: () => transitionRef.current?.play(),
                 onComplete: () => {
-                    gsap.set("#preview-box", { autoAlpha: 0 });
+                    gsap.set("#mini-box", { autoAlpha: 0 });
                     setClicked(false);
                 },
             });
 
-            // SHOW TRANSITION VIDEO
             gsap.set("#transition-video", {
                 autoAlpha: 1,
-                scale: 0.3,
+                scale: isMobile ? 1 : 0.2,
                 visibility: "visible",
             });
 
             tl.to("#transition-video", {
                 scale: 1,
-                duration: 0.8,
+                duration: 1,
             });
 
-            // HIDE PREVIEW BOX COMPLETELY
             tl.to(
-                "#preview-box",
+                "#mini-box",
                 {
-                    autoAlpha: 0, // opacity + visibility
-                    scale: 0.3,
-                    duration: 0.7,
+                    autoAlpha: 0,
+                    scale: 0.4,
+                    duration: 0.6,
                 },
                 0
             );
@@ -78,22 +77,21 @@ const Hero = () => {
         { dependencies: [current] }
     );
 
-    /* =============================
-        GSAP SCROLL FRAME
-    ============================== */
+    /* Disable clip-path on mobile */
     useGSAP(() => {
+        if (isMobile) return;
+
         gsap.set("#video-frame", {
             clipPath: "polygon(14% 0, 72% 0, 88% 90%, 0 95%)",
             borderRadius: "0% 0% 40% 10%",
         });
 
         gsap.from("#video-frame", {
-            clipPath: "polygon(0% 0%, 100% 0%, 100% 100%, 0% 100%)",
-            borderRadius: "0% 0% 0% 0%",
+            clipPath: "polygon(0 0, 100% 0, 100% 100%, 0 100%)",
             ease: "power1.inOut",
             scrollTrigger: {
                 trigger: "#video-frame",
-                start: "center center",
+                start: "center",
                 end: "bottom center",
                 scrub: true,
             },
@@ -104,8 +102,10 @@ const Hero = () => {
 
     return (
         <div className="relative h-dvh w-screen overflow-x-hidden">
+
+            {/* LOADER */}
             {loading && (
-                <div className="absolute z-50 flex-center h-dvh w-screen bg-violet-50">
+                <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/70">
                     <div className="three-body">
                         <div className="three-body__dot"></div>
                         <div className="three-body__dot"></div>
@@ -116,9 +116,9 @@ const Hero = () => {
 
             <div
                 id="video-frame"
-                className="relative z-10 h-dvh w-screen overflow-hidden rounded-2xl bg-blue-75"
+                className="relative z-10 h-dvh w-screen overflow-hidden rounded-lg bg-blue-75"
             >
-                {/* BACKGROUND VIDEO (CURRENT) */}
+                {/* Background current video */}
                 <video
                     src={src(current)}
                     autoPlay
@@ -129,7 +129,7 @@ const Hero = () => {
                     onLoadedData={handleLoad}
                 />
 
-                {/* TRANSITION VIDEO */}
+                {/* Transition video */}
                 <video
                     ref={transitionRef}
                     id="transition-video"
@@ -141,11 +141,11 @@ const Hero = () => {
                     onLoadedData={handleLoad}
                 />
 
-                {/* MINI PREVIEW BOX */}
+                {/* Mini preview */}
                 <div
-                    id="preview-box"
+                    id="mini-box"
                     className="absolute-center absolute z-40 size-64 cursor-pointer overflow-hidden rounded-xl"
-                    onClick={onPreviewClick}
+                    onClick={handleClick}
                 >
                     <VideoPreview>
                         <video
@@ -181,7 +181,6 @@ const Hero = () => {
                 </div>
             </div>
 
-            {/* BOTTOM TEXT */}
             <h1 className="special-font hero-heading absolute bottom-5 right-5 text-black">
                 G<b>A</b>MING
             </h1>
