@@ -1,13 +1,10 @@
 import gsap from "gsap";
 import { useGSAP } from "@gsap/react";
-import { ScrollTrigger } from "gsap/all";
 import { TiLocationArrow } from "react-icons/ti";
 import { useEffect, useRef, useState } from "react";
 
 import Button from "./Button";
 import VideoPreview from "./VideoPreview";
-
-gsap.registerPlugin(ScrollTrigger);
 
 const TOTAL_VIDEOS = 4;
 
@@ -29,7 +26,7 @@ const Hero = () => {
 
     const nextIndex = (currentIndex % TOTAL_VIDEOS) + 1;
 
-    /* ============== VIDEO SOURCE SELECTOR ============== */
+    /* SELECT VIDEO VERSION */
     const getVideoSrc = (i) =>
         isMobile
             ? `/videos/mobile/hero-${i}.mp4`
@@ -43,38 +40,35 @@ const Hero = () => {
         if (loaded >= 2) setLoading(false);
     }, [loaded]);
 
-    /* ============== ZOOM LOAD ============== */
     const handleZoomLoaded = () => {
         handleLoaded();
         setIsTransitionReady(true);
     };
 
-    /* ============== CLICK ============== */
     const startTransition = () => {
         if (loading || hasClicked) return;
         setTransitionIndex(nextIndex);
         setHasClicked(true);
     };
 
-    /* ============== GSAP TRANSITION ============== */
+    /* ===========================
+         GSAP TRANSITION FIXED
+    =========================== */
     useGSAP(
         () => {
-            if (
-                !hasClicked ||
-                !transitionIndex ||
-                !isTransitionReady
-            )
-                return;
+            if (!hasClicked || !transitionIndex || !isTransitionReady) return;
 
             const ctx = gsap.context(() => {
                 const tl = gsap.timeline({
                     defaults: { ease: "power2.out" },
+
                     onStart: () => {
                         if (zoomRef.current) {
                             zoomRef.current.currentTime = 0;
                             zoomRef.current.play().catch(() => {});
                         }
                     },
+
                     onComplete: () => {
                         setCurrentIndex(transitionIndex);
                         setTransitionIndex(null);
@@ -88,6 +82,7 @@ const Hero = () => {
                     },
                 });
 
+                // Safe initial state
                 gsap.set("#zoom-video", {
                     autoAlpha: 1,
                     scale: isMobile ? 1 : 0.3,
@@ -119,11 +114,11 @@ const Hero = () => {
     );
 
     return (
-        <div className="relative h-dvh w-screen overflow-x-hidden">
+        <div className="relative h-dvh w-screen overflow-x-hidden bg-black">
 
-            {/* ========== PRELOADER ========== */}
+            {/* LOADER */}
             {loading && (
-                <div className="absolute inset-0 z-[200] flex items-center justify-center bg-black/70 pointer-events-none">
+                <div className="absolute inset-0 z-[200] flex items-center justify-center bg-black/80">
                     <div className="three-body">
                         <div className="three-body__dot"></div>
                         <div className="three-body__dot"></div>
@@ -132,17 +127,19 @@ const Hero = () => {
                 </div>
             )}
 
+            {/* ===============================
+                VIDEO FRAME (NO overflow-hidden)
+            =============================== */}
             <div
                 id="video-frame"
                 className="
                     relative z-10 h-dvh w-screen
                     bg-blue-75
-                    rounded-lg
-                    overflow-hidden
-                    max-sm:overflow-visible
+                    rounded-none
+                    overflow-visible
                 "
             >
-                {/* ========== BACKGROUND VIDEO ========== */}
+                {/* BACKGROUND VIDEO */}
                 <video
                     ref={bgRef}
                     src={getVideoSrc(currentIndex)}
@@ -152,11 +149,16 @@ const Hero = () => {
                     playsInline
                     preload="auto"
                     poster="/fallback.jpg"
-                    className="absolute inset-0 size-full object-cover"
+                    className="
+                        absolute top-0 left-0
+                        w-full h-full
+                        object-cover
+                        max-sm:object-fill
+                    "
                     onLoadedData={handleLoaded}
                 />
 
-                {/* ========== ZOOM VIDEO ========== */}
+                {/* ZOOM VIDEO — Samsung-safe */}
                 <video
                     ref={zoomRef}
                     id="zoom-video"
@@ -165,31 +167,37 @@ const Hero = () => {
                             ? getVideoSrc(transitionIndex)
                             : getVideoSrc(currentIndex)
                     }
-                    autoPlay={false}
                     loop
                     muted
                     playsInline
+                    autoPlay={false}
                     preload="auto"
                     poster="/fallback.jpg"
                     className="
-                        absolute-center absolute z-40
-                        size-[26rem] max-sm:size-[19rem]
-                        object-cover
+                        absolute
+                        top-1/2 left-1/2
+                        -translate-x-1/2 -translate-y-1/2
+                        w-[26rem] h-[26rem]
+                        max-sm:w-[100vw] max-sm:h-[100vh]
+                        object-fill
                         opacity-0
-                        rounded-2xl max-sm:rounded-none
+                        rounded-none
                     "
                     onLoadedData={handleZoomLoaded}
                 />
 
-                {/* ========== MINI PREVIEW ========== */}
+                {/* MINI PREVIEW — SAFE CENTER */}
                 <div
                     id="mini-video-wrapper"
                     className="
-                        absolute-center absolute z-50
-                        size-64 max-sm:size-44
+                        absolute z-50
+                        top-1/2 left-1/2
+                        -translate-x-1/2 -translate-y-1/2
+                        w-64 h-64
+                        max-sm:w-44 max-sm:h-44
                         cursor-pointer
-                        overflow-hidden
-                        rounded-2xl max-sm:rounded-none
+                        overflow-visible
+                        rounded-none
                     "
                     onClick={startTransition}
                 >
@@ -202,15 +210,15 @@ const Hero = () => {
                             playsInline
                             preload="auto"
                             poster="/fallback.jpg"
-                            className="size-full object-cover"
+                            className="w-full h-full object-fill"
                             onLoadedData={handleLoaded}
                         />
                     </VideoPreview>
                 </div>
 
-                {/* ========== TEXT ========== */}
-                <div className="absolute left-0 top-0 z-40 size-full">
-                    <div className="mt-16 max-sm:mt-10 px-5 sm:px-10">
+                {/* TEXT */}
+                <div className="absolute left-0 top-0 z-40 w-full h-full pointer-events-none">
+                    <div className="mt-20 px-5 sm:px-10 pointer-events-auto">
                         <h1 className="special-font hero-heading text-blue-100">
                             redefi<b>n</b>e
                         </h1>
@@ -229,7 +237,7 @@ const Hero = () => {
                 </div>
             </div>
 
-            <h1 className="special-font hero-heading absolute bottom-2 right-2 max-sm:bottom-1 max-sm:right-1 text-black">
+            <h1 className="special-font hero-heading absolute bottom-4 right-4 text-white">
                 G<b>A</b>MING
             </h1>
         </div>
