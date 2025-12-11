@@ -20,33 +20,34 @@ const Hero = () => {
     const [loading, setLoading] = useState(true);
     const [loadedVideos, setLoadedVideos] = useState(0);
 
-    const miniVideoRef = useRef(null);
     const bgVideoRef = useRef(null);
     const zoomVideoRef = useRef(null);
+    const miniVideoRef = useRef(null);
+
+    const isMobile = typeof window !== "undefined" && window.innerWidth < 640;
 
     const nextIndex = (currentIndex % TOTAL_VIDEOS) + 1;
 
     const getVideoSrc = (i) =>
-        window.innerWidth < 640
-            ? `videos/mobile/hero-${i}.mp4` // оптимизированное mobile-видео
+        isMobile
+            ? `videos/mobile/hero-${i}.mp4`
             : `videos/hero-${i}.mp4`;
 
     const handleVideoLoad = () => {
-        setLoadedVideos((prev) => prev + 1);
+        setLoadedVideos((p) => p + 1);
     };
 
-    // финальная загрузка
     useEffect(() => {
         if (loadedVideos >= 2) setLoading(false);
     }, [loadedVideos]);
 
     const handleMiniVdClick = () => {
         if (loading || hasClicked) return;
+
         setTransitionIndex(nextIndex);
         setHasClicked(true);
     };
 
-    /* ========= ZOOM VIDEO LOAD ========= */
     const handleZoomLoad = () => {
         handleVideoLoad();
         if (transitionIndex) setTransitionReady(true);
@@ -54,6 +55,7 @@ const Hero = () => {
 
     /* =========================
        GSAP — ZOOM TRANSITION
+       (mobile-safe)
     ========================== */
     useGSAP(
         () => {
@@ -66,7 +68,9 @@ const Hero = () => {
                     onStart: () => {
                         if (zoomVideoRef.current) {
                             zoomVideoRef.current.currentTime = 0;
-                            zoomVideoRef.current.play().catch(() => {});
+                            zoomVideoRef.current
+                                .play()
+                                .catch(() => {});
                         }
                     },
 
@@ -78,18 +82,19 @@ const Hero = () => {
 
                         gsap.set("#zoom-video", {
                             autoAlpha: 0,
-                            scale: 0.7,
+                            scale: isMobile ? 1 : 0.7,
                         });
                     },
                 });
 
+                // Мобилка не любит transforms → ставим минимальный
                 gsap.set("#zoom-video", {
                     autoAlpha: 1,
-                    scale: window.innerWidth < 640 ? 0.5 : 0.3,
+                    scale: isMobile ? 1 : 0.3,
                 });
 
                 tl.to("#zoom-video", {
-                    scale: window.innerWidth < 640 ? 1.2 : 1,
+                    scale: isMobile ? 1 : 1,
                     duration: 0.9,
                 });
 
@@ -107,11 +112,7 @@ const Hero = () => {
             return () => ctx.revert();
         },
         {
-            dependencies: [
-                hasClicked,
-                transitionIndex,
-                transitionReady
-            ],
+            dependencies: [hasClicked, transitionIndex, transitionReady],
         }
     );
 
@@ -120,7 +121,7 @@ const Hero = () => {
        (OFF ON MOBILE)
     ========================== */
     useGSAP(() => {
-        if (window.innerWidth < 640) return;
+        if (isMobile) return;
 
         gsap.set("#video-frame", {
             clipPath: "polygon(14% 0, 72% 0, 88% 90%, 0 95%)",
@@ -156,7 +157,10 @@ const Hero = () => {
 
             <div
                 id="video-frame"
-                className="relative z-10 h-dvh w-screen overflow-hidden rounded-lg bg-blue-75"
+                className="
+                    relative z-10 h-dvh w-screen bg-blue-75 rounded-lg
+                    overflow-hidden max-sm:overflow-visible
+                "
             >
                 {/* ===== BACKGROUND VIDEO ===== */}
                 <video
@@ -180,19 +184,31 @@ const Hero = () => {
                             ? getVideoSrc(transitionIndex)
                             : getVideoSrc(currentIndex)
                     }
+                    autoPlay={false}
                     loop
                     muted
                     playsInline
-                    autoPlay={false}        // ВАЖНО: фикс белого экрана
                     preload="auto"
-                    className="absolute-center absolute z-40 size-[26rem] max-sm:size-[18rem] object-cover rounded-2xl opacity-0"
+                    className="
+                        absolute-center absolute z-40
+                        size-[26rem] max-sm:size-[18rem]
+                        object-cover
+                        opacity-0
+                        max-sm:rounded-none rounded-2xl
+                    "
                     onLoadedData={handleZoomLoad}
                 />
 
                 {/* ===== MINI PREVIEW ===== */}
                 <div
                     id="mini-video-wrapper"
-                    className="absolute-center absolute z-50 size-64 max-sm:size-40 cursor-pointer overflow-hidden rounded-2xl max-sm:rounded-xl"
+                    className="
+                        absolute-center absolute z-50
+                        size-64 max-sm:size-44
+                        cursor-pointer
+                        overflow-hidden
+                        max-sm:rounded-none rounded-2xl
+                    "
                     onClick={handleMiniVdClick}
                 >
                     <VideoPreview>
