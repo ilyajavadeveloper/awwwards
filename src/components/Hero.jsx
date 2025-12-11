@@ -15,6 +15,7 @@ const Hero = () => {
     const [currentIndex, setCurrentIndex] = useState(1);
     const [transitionIndex, setTransitionIndex] = useState(null);
     const [hasClicked, setHasClicked] = useState(false);
+    const [transitionReady, setTransitionReady] = useState(false);
 
     const [loading, setLoading] = useState(true);
     const [loadedVideos, setLoadedVideos] = useState(0);
@@ -25,64 +26,73 @@ const Hero = () => {
 
     const nextIndex = (currentIndex % TOTAL_VIDEOS) + 1;
 
-    const getVideoSrc = (i) => `videos/hero-${i}.mp4`;
+    const getVideoSrc = (i) =>
+        window.innerWidth < 640
+            ? `videos/mobile/hero-${i}.mp4` // оптимизированное mobile-видео
+            : `videos/hero-${i}.mp4`;
 
     const handleVideoLoad = () => {
         setLoadedVideos((prev) => prev + 1);
     };
 
-    // как только фон + превью подгрузились — выключаем лоадер
+    // финальная загрузка
     useEffect(() => {
         if (loadedVideos >= 2) setLoading(false);
     }, [loadedVideos]);
 
     const handleMiniVdClick = () => {
         if (loading || hasClicked) return;
-        const upcoming = nextIndex;
-        setTransitionIndex(upcoming);
+        setTransitionIndex(nextIndex);
         setHasClicked(true);
     };
 
+    /* ========= ZOOM VIDEO LOAD ========= */
+    const handleZoomLoad = () => {
+        handleVideoLoad();
+        if (transitionIndex) setTransitionReady(true);
+    };
+
     /* =========================
-       GSAP — ZOOM ТРАНЗИШН
+       GSAP — ZOOM TRANSITION
     ========================== */
     useGSAP(
         () => {
-            if (!hasClicked || transitionIndex == null) return;
+            if (!hasClicked || transitionIndex == null || !transitionReady) return;
 
             const ctx = gsap.context(() => {
                 const tl = gsap.timeline({
                     defaults: { ease: "power2.inOut" },
+
                     onStart: () => {
                         if (zoomVideoRef.current) {
                             zoomVideoRef.current.currentTime = 0;
-                            zoomVideoRef.current.play();
+                            zoomVideoRef.current.play().catch(() => {});
                         }
                     },
+
                     onComplete: () => {
                         setCurrentIndex(transitionIndex);
                         setHasClicked(false);
                         setTransitionIndex(null);
+                        setTransitionReady(false);
 
                         gsap.set("#zoom-video", {
                             autoAlpha: 0,
-                            scale: 0.8,
+                            scale: 0.7,
                         });
                     },
                 });
 
-                // показываем zoom-video
                 gsap.set("#zoom-video", {
                     autoAlpha: 1,
-                    scale: window.innerWidth < 640 ? 0.4 : 0.3,
+                    scale: window.innerWidth < 640 ? 0.5 : 0.3,
                 });
 
                 tl.to("#zoom-video", {
-                    scale: window.innerWidth < 640 ? 1.15 : 1,
+                    scale: window.innerWidth < 640 ? 1.2 : 1,
                     duration: 0.9,
                 });
 
-                // мини-превью схлопывается
                 tl.to(
                     "#mini-video-wrapper",
                     {
@@ -97,7 +107,11 @@ const Hero = () => {
             return () => ctx.revert();
         },
         {
-            dependencies: [hasClicked, transitionIndex],
+            dependencies: [
+                hasClicked,
+                transitionIndex,
+                transitionReady
+            ],
         }
     );
 
@@ -106,7 +120,7 @@ const Hero = () => {
        (OFF ON MOBILE)
     ========================== */
     useGSAP(() => {
-        if (window.innerWidth < 640) return; // <— ВАЖНО
+        if (window.innerWidth < 640) return;
 
         gsap.set("#video-frame", {
             clipPath: "polygon(14% 0, 72% 0, 88% 90%, 0 95%)",
@@ -144,7 +158,7 @@ const Hero = () => {
                 id="video-frame"
                 className="relative z-10 h-dvh w-screen overflow-hidden rounded-lg bg-blue-75"
             >
-                {/* ===== БЭКГРАУНД (текущее видео) ===== */}
+                {/* ===== BACKGROUND VIDEO ===== */}
                 <video
                     ref={bgVideoRef}
                     src={getVideoSrc(currentIndex)}
@@ -157,7 +171,7 @@ const Hero = () => {
                     onLoadedData={handleVideoLoad}
                 />
 
-                {/* ===== ZOOM-VIDEO ===== */}
+                {/* ===== ZOOM VIDEO ===== */}
                 <video
                     ref={zoomVideoRef}
                     id="zoom-video"
@@ -169,12 +183,13 @@ const Hero = () => {
                     loop
                     muted
                     playsInline
+                    autoPlay={false}        // ВАЖНО: фикс белого экрана
                     preload="auto"
                     className="absolute-center absolute z-40 size-[26rem] max-sm:size-[18rem] object-cover rounded-2xl opacity-0"
-                    onLoadedData={handleVideoLoad}
+                    onLoadedData={handleZoomLoad}
                 />
 
-                {/* ===== MINI PREVIEW (next video) ===== */}
+                {/* ===== MINI PREVIEW ===== */}
                 <div
                     id="mini-video-wrapper"
                     className="absolute-center absolute z-50 size-64 max-sm:size-40 cursor-pointer overflow-hidden rounded-2xl max-sm:rounded-xl"
@@ -194,7 +209,7 @@ const Hero = () => {
                     </VideoPreview>
                 </div>
 
-                {/* ===== ТЕКСТ ===== */}
+                {/* ===== TEXT BLOCK ===== */}
                 <div className="absolute left-0 top-0 z-40 size-full">
                     <div className="mt-16 max-sm:mt-10 px-5 sm:px-10">
                         <h1 className="special-font hero-heading text-blue-100">
@@ -215,7 +230,7 @@ const Hero = () => {
                 </div>
             </div>
 
-            {/* ===== НИЖНИЙ ТЕКСТ ===== */}
+            {/* ===== BOTTOM TEXT ===== */}
             <h1 className="special-font hero-heading absolute bottom-2 right-2 max-sm:bottom-1 max-sm:right-1 text-black">
                 G<b>A</b>MING
             </h1>
