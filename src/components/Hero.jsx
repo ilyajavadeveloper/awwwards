@@ -31,16 +31,13 @@ const Hero = () => {
         setLoadedVideos((prev) => prev + 1);
     };
 
-    // как только фон + превью подгрузились — убираем лоадер
+    // как только фон + превью подгрузились — выключаем лоадер
     useEffect(() => {
-        if (loadedVideos >= 2) {
-            setLoading(false);
-        }
+        if (loadedVideos >= 2) setLoading(false);
     }, [loadedVideos]);
 
     const handleMiniVdClick = () => {
         if (loading || hasClicked) return;
-
         const upcoming = nextIndex;
         setTransitionIndex(upcoming);
         setHasClicked(true);
@@ -74,23 +71,23 @@ const Hero = () => {
                     },
                 });
 
-                // делаем zoom-video видимым и растягиваем
+                // показываем zoom-video
                 gsap.set("#zoom-video", {
                     autoAlpha: 1,
-                    scale: 0.3,
+                    scale: window.innerWidth < 640 ? 0.4 : 0.3,
                 });
 
                 tl.to("#zoom-video", {
-                    scale: 1,
+                    scale: window.innerWidth < 640 ? 1.15 : 1,
                     duration: 0.9,
                 });
 
-                // мини-квадрат чуть "схлопывается" во время зума
+                // мини-превью схлопывается
                 tl.to(
                     "#mini-video-wrapper",
                     {
                         scale: 0.6,
-                        opacity: 0.0,
+                        opacity: 0,
                         duration: 0.9,
                     },
                     0
@@ -106,8 +103,11 @@ const Hero = () => {
 
     /* =========================
        GSAP — CLIP-PATH SCROLL
+       (OFF ON MOBILE)
     ========================== */
     useGSAP(() => {
+        if (window.innerWidth < 640) return; // <— ВАЖНО
+
         gsap.set("#video-frame", {
             clipPath: "polygon(14% 0, 72% 0, 88% 90%, 0 95%)",
             borderRadius: "0% 0% 40% 10%",
@@ -128,7 +128,8 @@ const Hero = () => {
 
     return (
         <div className="relative h-dvh w-screen overflow-x-hidden">
-            {/* LOADER — НЕ БЛОКИРУЕТ КЛИКИ */}
+
+            {/* ===== LOADER ===== */}
             {loading && (
                 <div className="absolute inset-0 z-[100] flex items-center justify-center bg-black/70 pointer-events-none">
                     <div className="three-body">
@@ -143,7 +144,7 @@ const Hero = () => {
                 id="video-frame"
                 className="relative z-10 h-dvh w-screen overflow-hidden rounded-lg bg-blue-75"
             >
-                {/* БЭКГРАУНД ВИДЕО — ТЕКУЩИЙ */}
+                {/* ===== БЭКГРАУНД (текущее видео) ===== */}
                 <video
                     ref={bgVideoRef}
                     src={getVideoSrc(currentIndex)}
@@ -156,7 +157,7 @@ const Hero = () => {
                     onLoadedData={handleVideoLoad}
                 />
 
-                {/* ZOOM VIDEO — ПОВЕРХ ВСЕГО, НОВЫЙ КАДР */}
+                {/* ===== ZOOM-VIDEO ===== */}
                 <video
                     ref={zoomVideoRef}
                     id="zoom-video"
@@ -169,14 +170,14 @@ const Hero = () => {
                     muted
                     playsInline
                     preload="auto"
-                    className="absolute-center absolute z-40 size-[26rem] object-cover rounded-2xl opacity-0"
+                    className="absolute-center absolute z-40 size-[26rem] max-sm:size-[18rem] object-cover rounded-2xl opacity-0"
                     onLoadedData={handleVideoLoad}
                 />
 
-                {/* MINI PREVIEW — ВСЕГДА ПОКАЗЫВАЕТ NEXT */}
+                {/* ===== MINI PREVIEW (next video) ===== */}
                 <div
                     id="mini-video-wrapper"
-                    className="absolute-center absolute z-50 size-64 cursor-pointer overflow-hidden rounded-2xl"
+                    className="absolute-center absolute z-50 size-64 max-sm:size-40 cursor-pointer overflow-hidden rounded-2xl max-sm:rounded-xl"
                     onClick={handleMiniVdClick}
                 >
                     <VideoPreview>
@@ -187,15 +188,15 @@ const Hero = () => {
                             muted
                             playsInline
                             preload="auto"
-                            className="size-64 object-cover"
+                            className="size-full object-cover"
                             onLoadedData={handleVideoLoad}
                         />
                     </VideoPreview>
                 </div>
 
-                {/* ТЕКСТ И КНОПКА СВЕРХУ */}
+                {/* ===== ТЕКСТ ===== */}
                 <div className="absolute left-0 top-0 z-40 size-full">
-                    <div className="mt-24 px-5 sm:px-10">
+                    <div className="mt-16 max-sm:mt-10 px-5 sm:px-10">
                         <h1 className="special-font hero-heading text-blue-100">
                             redefi<b>n</b>e
                         </h1>
@@ -214,8 +215,8 @@ const Hero = () => {
                 </div>
             </div>
 
-            {/* ДУБЛЬ-NAV ТЕКСТ СНИЗУ */}
-            <h1 className="special-font hero-heading absolute bottom-5 right-5 text-black">
+            {/* ===== НИЖНИЙ ТЕКСТ ===== */}
+            <h1 className="special-font hero-heading absolute bottom-2 right-2 max-sm:bottom-1 max-sm:right-1 text-black">
                 G<b>A</b>MING
             </h1>
         </div>
